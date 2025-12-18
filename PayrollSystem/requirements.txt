@@ -1,0 +1,33 @@
+# Proly Payroll Management System - Python Dependencies
+
+# GUI Framework
+PyQt6==6.6.1
+PyQt6-Qt6==6.6.1
+PyQt6-sip==13.6.0
+
+# Database
+mysql-connector-python==8.2.0
+
+# Migrations / ORM
+SQLAlchemy==2.0.23
+alembic==1.13.1
+
+# Security
+bcrypt==4.1.2
+
+# PDF Generation
+reportlab==4.0.7
+
+# Data Visualization (for Admin Dashboard Charts)
+matplotlib==3.8.2
+numpy==1.26.2
+
+# Utilities
+python-dateutil==2.8.2
+
+# Excel file support for compliance uploads
+openpyxl==3.1.2
+
+# Testing
+pytest==7.4.4
+

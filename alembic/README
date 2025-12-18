@@ -1,0 +1,11 @@
+Alembic migration setup for PROLY Payroll Management System
+
+Basic usage (from project root):
+
+  alembic revision -m "describe change"
+  alembic upgrade head
+
+The connection URL is built from the same environment variables used by the app:
+  DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+
+
