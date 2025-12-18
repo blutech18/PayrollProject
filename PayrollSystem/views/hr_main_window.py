@@ -227,12 +227,40 @@ class DashboardView(QWidget):
         self.layout.setContentsMargins(40, 40, 40, 40)
         self.layout.setSpacing(20)
 
+        # Header with title and refresh button
+        header_layout = QHBoxLayout()
         title = QLabel("DASHBOARD OVERVIEW")
         title.setStyleSheet(
             "font-size: 24px; font-weight: 800; color: #333; letter-spacing: 1px; margin-bottom: 5px;"
         )
         title.setGraphicsEffect(self._text_shadow())
-        self.layout.addWidget(title)
+        header_layout.addWidget(title)
+        header_layout.addStretch()
+        
+        # Add refresh button
+        refresh_btn = QPushButton("🔄 Refresh")
+        refresh_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #C0A065;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-weight: 600;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #D6B075;
+            }
+            QPushButton:pressed {
+                background-color: #A08050;
+            }
+        """)
+        refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        refresh_btn.clicked.connect(self.refresh_data)
+        header_layout.addWidget(refresh_btn)
+        
+        self.layout.addLayout(header_layout)
         self.layout.addSpacing(15)
 
         self.cards_row = QHBoxLayout()
@@ -282,6 +310,18 @@ class DashboardView(QWidget):
         
         self.layout.addWidget(large_card)
         self.layout.addStretch()
+    
+    def refresh_data(self):
+        """Refresh dashboard data by clearing and reloading cards."""
+        # Clear existing cards
+        while self.cards_row.count() > 0:
+            item = self.cards_row.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        # Reload data
+        self._load_data()
+        self.cards_row.addStretch()
     
     def _text_shadow(self) -> QGraphicsDropShadowEffect:
         """Create text shadow effect for titles."""
@@ -1927,6 +1967,9 @@ class HrMainWindow(QMainWindow):
 
     def _navigate(self, index: int):
         self.stack.setCurrentIndex(index)
+        # Refresh dashboard when navigating back to it
+        if index == 0 and hasattr(self.dashboard_view, 'refresh_data'):
+            self.dashboard_view.refresh_data()
     
     def _handle_logout(self):
         """Handle logout - close main window and show login window."""

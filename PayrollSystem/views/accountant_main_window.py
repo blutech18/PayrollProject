@@ -1166,6 +1166,9 @@ class AccountantMainWindow(QMainWindow):
 
     def _navigate(self, index: int):
         self.stack.setCurrentIndex(index)
+        # Refresh dashboard when navigating back to it
+        if index == 0 and hasattr(self.dashboard_view, 'refresh_data'):
+            self.dashboard_view.refresh_data()
     
     def _handle_logout(self):
         """Handle logout - close main window and show login window."""
