@@ -185,9 +185,37 @@ class AdminDashboardView(QWidget):
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(40, 30, 40, 40)
 
+        # Header with title and refresh button
+        header_layout = QHBoxLayout()
         title = QLabel("SYSTEM OVERVIEW")
         title.setStyleSheet("font-size: 20px; font-weight: 800; color: #555;")
-        self.layout.addWidget(title)
+        header_layout.addWidget(title)
+        header_layout.addStretch()
+        
+        # Add refresh button
+        refresh_btn = QPushButton("🔄 Refresh")
+        refresh_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #C0A065;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-weight: 600;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #D6B075;
+            }
+            QPushButton:pressed {
+                background-color: #A08050;
+            }
+        """)
+        refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        refresh_btn.clicked.connect(self.refresh_data)
+        header_layout.addWidget(refresh_btn)
+        
+        self.layout.addLayout(header_layout)
         self.layout.addSpacing(20)
 
         # Top Row - All 3 Stats Cards in One Row
@@ -246,6 +274,25 @@ class AdminDashboardView(QWidget):
         department_chart = self._create_department_chart()
         self.charts_row.addWidget(department_chart)
         
+        self.charts_row.addStretch()
+    
+    def refresh_data(self):
+        """Refresh dashboard data by clearing and reloading all content."""
+        # Clear existing cards
+        while self.cards_row.count() > 0:
+            item = self.cards_row.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        while self.charts_row.count() > 0:
+            item = self.charts_row.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        # Reload data
+        self._load_all_cards()
+        self._load_analytics_charts()
+        self.cards_row.addStretch()
         self.charts_row.addStretch()
     
     def _create_user_activity_chart(self) -> QWidget:
@@ -1326,6 +1373,9 @@ class AdminMainWindow(QMainWindow):
 
     def _navigate(self, index: int):
         self.stack.setCurrentIndex(index)
+        # Refresh dashboard when navigating back to it
+        if index == 0 and hasattr(self.dashboard_view, 'refresh_data'):
+            self.dashboard_view.refresh_data()
     
     def _handle_logout(self):
         """Handle logout - close main window and show login window."""

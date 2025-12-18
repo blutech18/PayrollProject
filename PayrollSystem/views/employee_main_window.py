@@ -213,6 +213,11 @@ class EmployeeDashboardView(QWidget):
         cl.addStretch()
         layout.addWidget(card)
     
+    def refresh_data(self):
+        """Refresh employee dashboard data."""
+        if self.employee_id:
+            self._load_employee_data()
+    
     def _load_employee_data(self):
         """Load employee data from database."""
         if not self.employee_id:
@@ -1088,7 +1093,7 @@ class EmployeeMainWindow(QMainWindow):
 
         main_hlayout.addWidget(content_container)
 
-        # Navigation
+        # Navigation with auto-refresh
         self.btn_dashboard.clicked.connect(lambda: self._navigate(0))
         self.btn_timekeeping.clicked.connect(lambda: self._navigate(1))
         self.btn_payslip.clicked.connect(lambda: self._navigate(2))

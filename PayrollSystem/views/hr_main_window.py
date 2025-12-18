@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
     QFrame,
     QGraphicsDropShadowEffect,
     QGridLayout,
+    QSizePolicy,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -297,31 +298,142 @@ class DashboardView(QWidget):
 
         self.layout.addSpacing(20)
 
+        # Recent Activities / Quick Stats Section
         large_card = ShadowCard()
-        large_card.setMinimumHeight(280)
+        large_card.setMinimumHeight(320)
         large_card_layout = QVBoxLayout(large_card)
-        large_card_layout.setContentsMargins(30, 30, 30, 30)
+        large_card_layout.setContentsMargins(40, 30, 40, 30)
+        large_card_layout.setSpacing(15)
         
-        # Add placeholder content or future chart/widgets here
-        placeholder_label = QLabel("Additional Dashboard Content")
-        placeholder_label.setStyleSheet("color: #999; font-size: 14px; font-style: italic;")
-        placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        large_card_layout.addWidget(placeholder_label)
+        # Section title
+        section_title = QLabel("RECENT ACTIVITIES & QUICK STATS")
+        section_title.setStyleSheet("font-size: 16px; font-weight: 800; color: #333; letter-spacing: 0.5px;")
+        large_card_layout.addWidget(section_title)
+        large_card_layout.addSpacing(10)
         
+        # Load recent activities
+        self._load_recent_activities(large_card_layout)
+        
+        large_card_layout.addStretch()
         self.layout.addWidget(large_card)
         self.layout.addStretch()
     
+    def _load_recent_activities(self, layout):
+        """Load recent activities and quick stats."""
+        try:
+            from models.database import get_connection
+            from datetime import date, timedelta
+            
+            # Get employee and payroll statistics
+            with get_connection() as conn:
+                with conn.cursor(dictionary=True) as cur:
+                    # Recent employees (hired in last 30 days based on date_hired)
+                    thirty_days_ago = date.today() - timedelta(days=30)
+                    cur.execute("""
+                        SELECT COUNT(*) as count 
+                        FROM employees 
+                        WHERE date_hired >= %s AND is_active = 1
+                    """, (thirty_days_ago,))
+                    recent_emp = cur.fetchone()
+                    new_employees = recent_emp['count'] if recent_emp else 0
+                    
+                    # Total active employees
+                    cur.execute("SELECT COUNT(*) as count FROM employees WHERE is_active = 1")
+                    active_result = cur.fetchone()
+                    active_employees = active_result['count'] if active_result else 0
+                    
+                    # Departments count
+                    cur.execute("SELECT COUNT(*) as count FROM departments")
+                    dept_result = cur.fetchone()
+                    departments = dept_result['count'] if dept_result else 0
+                    
+                    # Total payroll periods
+                    cur.execute("SELECT COUNT(*) as count FROM payroll_periods")
+                    payroll_result = cur.fetchone()
+                    total_periods = payroll_result['count'] if payroll_result else 0
+            
+            # Display stats in a grid with proper column sizing
+            grid = QGridLayout()
+            grid.setSpacing(20)
+            grid.setContentsMargins(0, 0, 0, 0)
+            grid.setColumnStretch(0, 1)
+            grid.setColumnStretch(1, 1)
+            
+            # Row 1
+            self._add_stat_item(grid, 0, 0, "👥 Active Employees", str(active_employees))
+            self._add_stat_item(grid, 0, 1, "🏢 Departments", str(departments))
+            
+            # Row 2
+            self._add_stat_item(grid, 1, 0, "✨ New This Month", str(new_employees))
+            self._add_stat_item(grid, 1, 1, "💰 Payroll Periods", str(total_periods))
+            
+            layout.addLayout(grid)
+            
+        except Exception as e:
+            logger.exception("Error loading recent activities: %s", e)
+            error_label = QLabel("Unable to load recent activities")
+            error_label.setStyleSheet("color: #999; font-size: 13px; font-style: italic;")
+            layout.addWidget(error_label)
+    
+    def _add_stat_item(self, grid, row, col, label_text, value_text):
+        """Add a stat item to the grid."""
+        container = QWidget()
+        container.setStyleSheet("""
+            QWidget {
+                background-color: #F5F3F0;
+                border-radius: 8px;
+            }
+        """)
+        container.setMinimumHeight(100)
+        
+        v_layout = QVBoxLayout(container)
+        v_layout.setContentsMargins(25, 20, 25, 20)
+        v_layout.setSpacing(10)
+        
+        label = QLabel(label_text)
+        label.setStyleSheet("font-size: 13px; color: #666; font-weight: 600;")
+        label.setWordWrap(True)
+        
+        value = QLabel(value_text)
+        value.setStyleSheet("font-size: 28px; color: #333; font-weight: 800;")
+        value.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        value.setMinimumHeight(40)
+        value.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        
+        v_layout.addWidget(label)
+        v_layout.addWidget(value)
+        v_layout.addStretch()
+        
+        grid.addWidget(container, row, col, 1, 1)
+    
     def refresh_data(self):
-        """Refresh dashboard data by clearing and reloading cards."""
-        # Clear existing cards
-        while self.cards_row.count() > 0:
-            item = self.cards_row.takeAt(0)
+        """Refresh dashboard data by clearing and reloading all content."""
+        # Clear the entire layout except title
+        while self.layout.count() > 2:  # Keep title and spacing
+            item = self.layout.takeAt(2)
             if item.widget():
                 item.widget().deleteLater()
+            elif item.layout():
+                self._clear_layout(item.layout())
         
-        # Reload data
+        # Recreate cards row
+        self.cards_row = QHBoxLayout()
+        self.cards_row.setSpacing(40)
+        self.cards_row.setContentsMargins(0, 0, 0, 0)
+        
+        # Reload all data
         self._load_data()
         self.cards_row.addStretch()
+        self.layout.addLayout(self.cards_row)
+    
+    def _clear_layout(self, layout):
+        """Helper to clear a layout recursively."""
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+            elif item.layout():
+                self._clear_layout(item.layout())
     
     def _text_shadow(self) -> QGraphicsDropShadowEffect:
         """Create text shadow effect for titles."""

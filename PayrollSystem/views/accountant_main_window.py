@@ -209,9 +209,37 @@ class AccountantDashboardView(QWidget):
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(40, 30, 40, 40)
 
+        # Header with title and refresh button
+        header_layout = QHBoxLayout()
         title = QLabel("DASHBOARD OVERVIEW")
         title.setStyleSheet("font-size: 20px; font-weight: 800; color: #555;")
-        self.layout.addWidget(title)
+        header_layout.addWidget(title)
+        header_layout.addStretch()
+        
+        # Add refresh button
+        refresh_btn = QPushButton("🔄 Refresh")
+        refresh_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #C0A065;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-weight: 600;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #D6B075;
+            }
+            QPushButton:pressed {
+                background-color: #A08050;
+            }
+        """)
+        refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        refresh_btn.clicked.connect(self.refresh_data)
+        header_layout.addWidget(refresh_btn)
+        
+        self.layout.addLayout(header_layout)
         self.layout.addSpacing(20)
 
         # Top Row Cards
@@ -276,6 +304,25 @@ class AccountantDashboardView(QWidget):
         ml.addStretch()
 
         self.row2.addWidget(money_card)
+    
+    def refresh_data(self):
+        """Refresh dashboard data by clearing and reloading all content."""
+        # Clear existing cards
+        while self.row.count() > 0:
+            item = self.row.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        while self.row2.count() > 0:
+            item = self.row2.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        # Reload data
+        self._load_data()
+        self._load_total_payroll_card()
+        self.row.addStretch()
+        self.row2.addStretch()
 
 
 class AccountantPayrollCompView(QWidget):
